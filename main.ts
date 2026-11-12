@@ -59,8 +59,6 @@ function bucket(r: number): number {
 const NB = 21;
 const cnt: number[][] = Array.from({ length: NB }, () => new Array<number>(PLACES).fill(0));
 const tot: number[] = new Array<number>(NB).fill(0);
-const cntR: number[][] = Array.from({ length: NB }, () => new Array<number>(PLACES).fill(0));
-const rankSum: number[] = new Array<number>(NB).fill(0);
 
 // Pairs (origin i, target j) with horizon in [off, off+winLen]; weight each origin's targets so every hour-of-horizon
 // bin counts equally (history reads can be hourly or every few hours).
@@ -81,7 +79,6 @@ for (let i = 0; i < snaps.length; i++) {
       for (const [id, r] of o.ranks) {
         const b = bucket(r);
         tot[b]! += w;
-        rankSum[b]! += w * r;
         const k = tg.ranks.get(id);
         if (k !== undefined && k <= PLACES) cnt[b]![k - 1]! += w;
       }
@@ -97,7 +94,7 @@ function prob(r: number, k: number): number {
   for (let q = 1; q <= PLACES; q++) z += Math.exp(-Math.abs(q - r) / PRIOR_SCALE);
   const full = 1 + 2 * (Math.exp(-1 / PRIOR_SCALE) / (1 - Math.exp(-1 / PRIOR_SCALE)));
   const mass = r <= PLACES ? PRIOR_MASS : PRIOR_MASS * Math.min(1, z / full) * Math.exp(-(r - PLACES) / 12);
-  const prior = (mass * Math.exp(-Math.abs(k - r) / PRIOR_SCALE)) / (z || 1) * (r <= PLACES ? 1 : 1);
+  const prior = (mass * Math.exp(-Math.abs(k - r) / PRIOR_SCALE)) / (z || 1);
   const n = tot[b]!;
   return (cnt[b]![k - 1]! + PRIOR_STRENGTH * prior) / (n + PRIOR_STRENGTH);
 }
